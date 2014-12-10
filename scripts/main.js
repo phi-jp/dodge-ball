@@ -11,6 +11,40 @@ var SCREEN_CENTER_Y = SCREEN_HEIGHT/2;  // スクリーン高さの半分
 var SCREEN_CENTER   = tm.geom.Vector2(SCREEN_CENTER_X, SCREEN_CENTER_Y);
 var SCREEN_RECT     = tm.geom.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
+var LEVEL_MAP = [
+    {
+        frame: 150,
+        step: 30,
+        commands: [
+            { method: "createRandomEnemy", args: ["Enemy"] }
+        ],
+    },
+    {
+        frame: 150,
+        step: 10,
+        commands: [
+            { method: "createRandomEnemy", args: ["Enemy"] }
+        ],
+    },
+    {
+        frame: 150,
+        step: 15,
+        commands: [
+            { method: "createRandomEnemy", args: ["Enemy"] },
+            { method: "createRandomEnemy", args: ["SpeedyEnemy"] },
+        ],
+    },
+    {
+        frame: 150,
+        step: 10,
+        commands: [
+            { method: "createRandomEnemy", args: ["Enemy"] },
+            { method: "createRandomEnemy", args: ["SpeedyEnemy"] },
+            { method: "createRandomEnemy", args: ["SpeedyEnemy"] },
+        ],
+    },
+];
+
 // main
 tm.main(function() {
     // キャンバスアプリケーションを生成
@@ -34,15 +68,15 @@ tm.define("ManagerScene", {
 	init: function() {
 		this.superInit({
 			scenes: [
-				// {
-				// 	className: "tm.scene.TitleScene",
-				// 	arguments: {
-				// 		width: SCREEN_WIDTH,
-				// 		height: SCREEN_HEIGHT,
-				// 		title: "Dodge Ball",
-				// 	},
-				// 	label: "title",
-				// },
+				{
+					className: "tm.scene.TitleScene",
+					arguments: {
+						width: SCREEN_WIDTH,
+						height: SCREEN_HEIGHT,
+						title: "Dodge Ball",
+					},
+					label: "title",
+				},
 				{
 					className: "GameScene",
 					label: "game",
@@ -50,7 +84,11 @@ tm.define("ManagerScene", {
 				}
 			],
 		});
-	}
+	},
+
+    onstart: function() {
+        this.gotoScene("game");
+    },
 })
 
 // シーンを定義
@@ -88,7 +126,13 @@ tm.define("GameScene", {
         this.stage.fromJSON({
 
         });
-        
+
+        this.level = 0;
+        this.levelMap = LEVEL_MAP[0];
+    },
+
+    onenter: function(e) {
+        e.app.frame = 0;
     },
     
     update: function(app) {
@@ -98,34 +142,93 @@ tm.define("GameScene", {
             this.player.x += p.dx;
             this.player.y += p.dy;
         }
-        
+
+        if (app.frame % this.levelMap.step === 0) {
+            var command = this.levelMap.commands.pickup();
+            var method = this[command.method];
+            method.apply(this, command.args);
+        }
+
+        if (this.checkLevelUp(app.frame)) {
+            app.frame = 0;
+            this.levelUp(app);
+        }
+
+        /*
         if (app.frame % 30 === 0) {
-            var enemy = Enemy().addChildTo(this.enemyGroup);
-            var length = 560;
-            var angle = Math.rand(0, 360);
-            var vx = Math.cos(angle*Math.PI/180);
-            var vy = Math.sin(angle*Math.PI/180);
-            var x = SCREEN_CENTER_X + vx*length;
-            var y = SCREEN_CENTER_Y + vy*length;
-            
-            enemy.setDirection(angle+180+Math.rand(-30, 30));
-            enemy.setPosition(x, y);
+            this.createRandomEnemy("Enemy");
+        }
+        
+        if (app.frame % 60 === 0) {
+            this.createVerticalEnemy("Enemy", 4);
         }
 
         if (app.frame % 120 === 100) {
-            var enemy = SpeedyEnemy().addChildTo(this.enemyGroup);
-            var length = 560;
-            var angle = Math.rand(0, 360);
-            var vx = Math.cos(angle*Math.PI/180);
-            var vy = Math.sin(angle*Math.PI/180);
-            var x = SCREEN_CENTER_X + vx*length;
-            var y = SCREEN_CENTER_Y + vy*length;
-            
-            enemy.setDirection(angle+180+Math.rand(-30, 30));
-            enemy.setPosition(x, y);
+            this.createRandomEnemy("SpeedyEnemy");
         }
 
+        if (app.frame % 120 === 60) {
+            this.createRandomEnemy("CrookedEnemy");
+        }
+        */
+
         this.checkCollision(app);
+    },
+
+    checkLevelUp: function(frame) {
+        return frame > this.levelMap.frame && LEVEL_MAP[this.level+1] != null;
+    },
+
+    levelUp: function(app) {
+        this.level = this.level+1;
+        this.levelMap = LEVEL_MAP[this.level];
+
+        console.log(this.level);
+
+        return this;
+    },
+
+    createEnemy: function(name, x, y, angle) {
+        var enemyGroup = this.enemyGroup;
+        var klass = tm.using(name);
+        var enemy = klass().addChildTo(enemyGroup);
+
+        enemy.setPosition(x, y);
+        enemy.setDirection(angle);
+
+        return enemy;
+    },
+
+    createRandomEnemy: function(name) {
+        var length = 560;
+        var angle = Math.rand(0, 360);
+        var vx = Math.cos(angle*Math.PI/180);
+        var vy = Math.sin(angle*Math.PI/180);
+        var x = SCREEN_CENTER_X + vx*length;
+        var y = SCREEN_CENTER_Y + vy*length;
+        var enemy = this.createEnemy(name, x, y, angle+180+Math.rand(-30, 30));
+        
+        return enemy;
+    },
+
+    createHorizontalEnemy: function(name) {
+
+    },
+
+    createVerticalEnemy: function(name, count) {
+        var enemies = [];
+        var baseEnemy = this.createRandomEnemy(name);
+
+        var angle = baseEnemy.angle;
+        var vx = Math.cos(angle*Math.PI/180);
+        var vy = Math.sin(angle*Math.PI/180);
+        count.times(function(i) {
+            var index = i+1;
+            var x = vx*index*-1*20 + baseEnemy.x;
+            var y = vy*index*-1*20 + baseEnemy.y;
+            var enemy = this.createEnemy(name, x, y, angle);
+
+        }, this);
     },
 
     checkCollision: function(app) {
@@ -198,8 +301,10 @@ tm.define("Enemy", {
     },
     
     setDirection: function(angle) {
+        this.angle = angle;
         this.velocity.x = Math.cos(angle*Math.PI/180);
         this.velocity.y = Math.sin(angle*Math.PI/180);
+
         return this;
     },
 });
@@ -211,6 +316,25 @@ tm.define("SpeedyEnemy", {
         this.superInit("blue");
         
         this.speed = 12;
+    },
+});
+
+tm.define("CrookedEnemy", {
+    superClass: "Enemy",
+    
+    init: function() {
+        this.superInit("green");
+
+        this.onenterframe = function(e) {
+            if (e.app.frame % 30 == 0) {
+                this.setDirection(this.angle + 60);
+            }
+            else if (e.app.frame % 15 == 0) {
+                this.setDirection(this.angle - 60);
+            }
+        };
+
+        this.speed = 8;
     },
 });
 
