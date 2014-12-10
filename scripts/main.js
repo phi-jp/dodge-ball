@@ -120,6 +120,22 @@ tm.define("GameScene", {
                 bg: {
                     type: "Background",
                 },
+                levelText: {
+                    type: "tm.display.Label",
+                    x: SCREEN_CENTER_X-30,
+                    y: 885,
+                    text: "Level",
+                    fillStyle: "#444",
+                    fontSize: 40,
+                },
+                levelLabel: {
+                    type: "tm.display.Label",
+                    x: SCREEN_CENTER_X+50,
+                    y: 880,
+                    text: "1",
+                    fillStyle: "#444",
+                    fontSize: 56,
+                },
             }
         });
 
@@ -154,24 +170,6 @@ tm.define("GameScene", {
             this.levelUp(app);
         }
 
-        /*
-        if (app.frame % 30 === 0) {
-            this.createRandomEnemy("Enemy");
-        }
-        
-        if (app.frame % 60 === 0) {
-            this.createVerticalEnemy("Enemy", 4);
-        }
-
-        if (app.frame % 120 === 100) {
-            this.createRandomEnemy("SpeedyEnemy");
-        }
-
-        if (app.frame % 120 === 60) {
-            this.createRandomEnemy("CrookedEnemy");
-        }
-        */
-
         this.checkCollision(app);
     },
 
@@ -183,7 +181,7 @@ tm.define("GameScene", {
         this.level = this.level+1;
         this.levelMap = LEVEL_MAP[this.level];
 
-        console.log(this.level);
+        this.levelLabel.text = this.level+1;
 
         return this;
     },
