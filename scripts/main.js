@@ -8,6 +8,8 @@ var SCREEN_WIDTH    = 640;              // スクリーン幅
 var SCREEN_HEIGHT   = 960;              // スクリーン高さ
 var SCREEN_CENTER_X = SCREEN_WIDTH/2;   // スクリーン幅の半分
 var SCREEN_CENTER_Y = SCREEN_HEIGHT/2;  // スクリーン高さの半分
+var SCREEN_CENTER   = tm.geom.Vector2(SCREEN_CENTER_X, SCREEN_CENTER_Y);
+var SCREEN_RECT     = tm.geom.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 // main
 tm.main(function() {
@@ -32,15 +34,15 @@ tm.define("ManagerScene", {
 	init: function() {
 		this.superInit({
 			scenes: [
-				{
-					className: "tm.scene.TitleScene",
-					arguments: {
-						width: SCREEN_WIDTH,
-						height: SCREEN_HEIGHT,
-						title: "Dodge Ball",
-					},
-					label: "title",
-				},
+				// {
+				// 	className: "tm.scene.TitleScene",
+				// 	arguments: {
+				// 		width: SCREEN_WIDTH,
+				// 		height: SCREEN_HEIGHT,
+				// 		title: "Dodge Ball",
+				// 	},
+				// 	label: "title",
+				// },
 				{
 					className: "GameScene",
 					label: "game",
@@ -65,10 +67,12 @@ tm.define("GameScene", {
             	},
                 player: {
                     type: "tm.display.CircleShape",
-                    init: [64, 64, {
+                    init: {
+                        width: 64,
+                        heigth: 64,
                         fillStyle: "hsla(0, 80%, 60%, 0.8)",
                         strokeStyle: "transparent",
-                    }],
+                    },
                     x: SCREEN_CENTER_X,
                     y: SCREEN_CENTER_Y,
                 },
@@ -107,8 +111,8 @@ tm.define("GameScene", {
             enemy.setDirection(angle+180+Math.rand(-30, 30));
             enemy.setPosition(x, y);
         }
-        
-        if (app.frame % 120 === 0) {
+
+        if (app.frame % 120 === 100) {
             var enemy = SpeedyEnemy().addChildTo(this.enemyGroup);
             var length = 560;
             var angle = Math.rand(0, 360);
@@ -149,7 +153,10 @@ tm.define("Background", {
     superClass: "tm.display.Shape",
     
     init: function() {
-        this.superInit(SCREEN_WIDTH, SCREEN_HEIGHT);
+        this.superInit({
+            width: SCREEN_WIDTH,
+            height: SCREEN_HEIGHT,
+        });
         
         this.setOrigin(0, 0);
         
@@ -166,7 +173,9 @@ tm.define("Enemy", {
     superClass: "tm.display.CircleShape",
     
     init: function(color) {
-        this.superInit(16, 16, {
+        this.superInit({
+            width: 16,
+            height: 16,
             fillStyle: color||"black",
             strokeStyle: "transparent",
         });
@@ -178,6 +187,14 @@ tm.define("Enemy", {
     update: function() {
         this.x += this.velocity.x*this.speed;
         this.y += this.velocity.y*this.speed;
+
+        // dir check
+        var toCenter = tm.geom.Vector2.sub(SCREEN_CENTER, this.position);
+        var dot = tm.geom.Vector2.dot(toCenter, this.velocity);
+
+        if (dot < 0 && SCREEN_RECT.contains(this.x, this.y) == false) {
+            this.remove();
+        }
     },
     
     setDirection: function(angle) {
