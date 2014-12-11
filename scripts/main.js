@@ -10,7 +10,6 @@ var SCREEN_CENTER_X = SCREEN_WIDTH/2;   // スクリーン幅の半分
 var SCREEN_CENTER_Y = SCREEN_HEIGHT/2;  // スクリーン高さの半分
 var SCREEN_CENTER   = tm.geom.Vector2(SCREEN_CENTER_X, SCREEN_CENTER_Y);
 var SCREEN_RECT     = tm.geom.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
 var LEVEL_MAP = [
     {
         frame: 150,
@@ -43,7 +42,32 @@ var LEVEL_MAP = [
             { method: "createRandomEnemy", args: ["SpeedyEnemy"] },
         ],
     },
+    {
+        frame: 150,
+        step: 10,
+        commands: [
+            { method: "createRandomEnemy", args: ["Enemy"] },
+            { method: "createRandomEnemy", args: ["SpeedyEnemy"] },
+            { method: "createVerticalEnemy", args: ["Enemy", 10] },
+        ],
+    },
+    {
+        frame: 150,
+        step: 10,
+        commands: [
+            { method: "createRandomEnemy", args: ["SpeedyEnemy"] },
+            { method: "createVerticalEnemy", args: ["SpeedyEnemy", 10] },
+        ],
+    },
+    {
+        frame: 150,
+        step: 10,
+        commands: [
+            { method: "createHorizontalEnemy", args: ["Enemy", 10] },
+        ],
+    },
 ];
+var DEFAULT_LEVEL = 0;
 
 // main
 tm.main(function() {
@@ -136,6 +160,14 @@ tm.define("GameScene", {
                     fillStyle: "#444",
                     fontSize: 56,
                 },
+                scoreLabel: {
+                    type: "tm.display.Label",
+                    x: SCREEN_CENTER_X,
+                    y: 80,
+                    text: "0",
+                    fillStyle: "#444",
+                    fontSize: 56,
+                },
             }
         });
 
@@ -143,8 +175,7 @@ tm.define("GameScene", {
 
         });
 
-        this.level = 0;
-        this.levelMap = LEVEL_MAP[0];
+        this.setLevel(DEFAULT_LEVEL);
     },
 
     onenter: function(e) {
@@ -159,31 +190,38 @@ tm.define("GameScene", {
             this.player.y += p.dy;
         }
 
-        if (app.frame % this.levelMap.step === 0) {
+        if (this.frame % this.levelMap.step === 0) {
             var command = this.levelMap.commands.pickup();
             var method = this[command.method];
             method.apply(this, command.args);
         }
 
-        if (this.checkLevelUp(app.frame)) {
-            app.frame = 0;
+        if (this.checkLevelUp()) {
             this.levelUp(app);
         }
 
         this.checkCollision(app);
+
+        this.frame++;
+
+        this.scoreLabel.text = app.frame;
     },
 
-    checkLevelUp: function(frame) {
-        return frame > this.levelMap.frame && LEVEL_MAP[this.level+1] != null;
+    checkLevelUp: function() {
+        return this.frame > this.levelMap.frame && LEVEL_MAP[this.level+1] != null;
     },
 
-    levelUp: function(app) {
-        this.level = this.level+1;
+    setLevel: function(level) {
+        this.level = level;
         this.levelMap = LEVEL_MAP[this.level];
 
         this.levelLabel.text = this.level+1;
-
+        this.frame = 0;
         return this;
+    },
+
+    levelUp: function() {
+        return this.setLevel(this.level+1);
     },
 
     createEnemy: function(name, x, y, angle) {
@@ -209,8 +247,19 @@ tm.define("GameScene", {
         return enemy;
     },
 
-    createHorizontalEnemy: function(name) {
+    createHorizontalEnemy: function(name, count) {
+        var enemies = [];
+        var baseEnemy = this.createRandomEnemy(name);
 
+        var angle = baseEnemy.angle;
+        var vx = Math.cos((angle+90)*Math.PI/180);
+        var vy = Math.sin((angle+90)*Math.PI/180);
+        count.times(function(i) {
+            var index = i-5;
+            var x = vx*index*-1*20 + baseEnemy.x;
+            var y = vy*index*-1*20 + baseEnemy.y;
+            var enemy = this.createEnemy(name, x, y, angle);
+        }, this);
     },
 
     createVerticalEnemy: function(name, count) {
@@ -225,7 +274,6 @@ tm.define("GameScene", {
             var x = vx*index*-1*20 + baseEnemy.x;
             var y = vy*index*-1*20 + baseEnemy.y;
             var enemy = this.createEnemy(name, x, y, angle);
-
         }, this);
     },
 
