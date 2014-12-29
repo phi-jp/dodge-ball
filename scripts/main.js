@@ -61,7 +61,7 @@ var LEVEL_MAP = [
     },
     {
         frame: 150,
-        step: 10,
+        step: 20,
         commands: [
             { method: "createHorizontalEnemy", args: ["Enemy", 10] },
         ],
@@ -78,8 +78,18 @@ tm.main(function() {
     app.resize(SCREEN_WIDTH, SCREEN_HEIGHT);
     // ウィンドウにフィットさせる
     app.fitWindow();
-    
-    // シーン切り替え
+
+    // // ロード
+    // var loading = tm.scene.LoadingScene({
+    //     assets: {
+    //         "bgm": "sounds/bgm.mp3",
+    //     },
+    // });
+    // loading.onload = function() {
+    //     // シーン切り替え
+    //     app.replaceScene(ManagerScene());
+    // };
+    // app.replaceScene(loading);
     app.replaceScene(ManagerScene());
 
     // 実行
@@ -87,33 +97,35 @@ tm.main(function() {
 });
 
 tm.define("ManagerScene", {
-	superClass: "tm.scene.ManagerScene",
+    superClass: "tm.scene.ManagerScene",
 
-	init: function() {
-		this.superInit({
-			scenes: [
-				{
-					className: "tm.scene.TitleScene",
-					arguments: {
-						width: SCREEN_WIDTH,
-						height: SCREEN_HEIGHT,
-						title: "Dodge Ball",
-					},
-					label: "title",
-				},
-				{
-					className: "GameScene",
-					label: "game",
-					nextLabel: "title",
-				}
-			],
-		});
-	},
+    init: function() {
+        this.superInit({
+            scenes: [
+                {
+                    className: "tm.scene.TitleScene",
+                    arguments: {
+                        width: SCREEN_WIDTH,
+                        height: SCREEN_HEIGHT,
+                        title: "Dodge Ball",
+                    },
+                    label: "title",
+                },
+                {
+                    className: "GameScene",
+                    label: "game",
+                    nextLabel: "title",
+                }
+            ],
+        });
+
+        // tm.asset.Manager.get("bgm").clone().play();
+    },
 
     onstart: function() {
         this.gotoScene("game");
     },
-})
+});
 
 // シーンを定義
 tm.define("GameScene", {
@@ -124,9 +136,9 @@ tm.define("GameScene", {
         
         this.fromJSON({
             children: {
-            	stage: {
-            		type: "tm.display.CanvasElement",
-            	},
+                stage: {
+                    type: "tm.display.CanvasElement",
+                },
                 player: {
                     type: "tm.display.CircleShape",
                     init: {
@@ -278,22 +290,22 @@ tm.define("GameScene", {
     },
 
     checkCollision: function(app) {
-    	var flag = this.enemyGroup.children.some(function(enemy) {
-    		if (this.player.isHitElement(enemy)) {
-    			return true;
-    		}
-    	}, this);
+        var flag = this.enemyGroup.children.some(function(enemy) {
+            if (this.player.isHitElement(enemy)) {
+                return true;
+            }
+        }, this);
 
-    	if (flag == true) {
-    		var result = ResultScene({
-    			score: app.frame,
-    		});
-    		this.app.pushScene(result);
+        if (flag == true) {
+            var result = ResultScene({
+                score: app.frame,
+            });
+            this.app.pushScene(result);
 
-    		this.onresume = function() {
-    			app.popScene();
-    		};
-    	}
+            this.onresume = function() {
+                app.popScene();
+            };
+        }
     },
 });
 
@@ -386,11 +398,11 @@ tm.define("CrookedEnemy", {
 
 
 tm.define("ResultScene", {
-	superClass: "tm.scene.ResultScene",
+    superClass: "tm.scene.ResultScene",
 
-	init: function(param) {
-		this.superInit(param);
-	},
+    init: function(param) {
+        this.superInit(param);
+    },
 });
 
 
